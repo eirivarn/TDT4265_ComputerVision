@@ -60,6 +60,10 @@ class BaseTrainer:
             val_history: a dictionary containing loss and accuracy over a selected set of steps
         """
         # Utility variables
+        best_val_loss = np.inf
+        epochs_without_improvement = 0
+        early_stop_threshold = 10
+
         num_batches_per_epoch = self.X_train.shape[0] // self.batch_size
         num_steps_per_val = num_batches_per_epoch // 5
         # A tracking value of loss over all training steps
@@ -90,5 +94,16 @@ class BaseTrainer:
 
                     # TODO (Task 2d): Implement early stopping here.
                     # You can access the validation loss in val_history["loss"]
+                    if val_loss < best_val_loss:
+                        best_val_loss = val_loss
+                        epochs_without_improvement = 0
+                    else:
+                        epochs_without_improvement += 1
+
+                    if epochs_without_improvement >= early_stop_threshold:
+                        print(
+                            f"Early stopping triggered after {epoch + 1} epochs and {global_step + 1} global steps.")
+                        return train_history, val_history
+
                 global_step += 1
         return train_history, val_history

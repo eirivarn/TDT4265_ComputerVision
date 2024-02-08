@@ -16,7 +16,21 @@ def calculate_accuracy(X: np.ndarray, targets: np.ndarray, model: BinaryModel) -
         Accuracy (float)
     """
     # TODO Implement this function (Task 2c)
-    accuracy = 0.0
+    # Use the model to predict outputs
+    outputs = model.forward(X)
+
+    # Threshold the outputs to get binary class predictions
+    # Convert probabilities to 0 or 1 based on the threshold of 0.5
+    predictions = outputs > 0.5
+
+    # Calculate the number of correct predictions
+    # This is done by comparing predictions with targets
+    # The sum of True values (correct predictions) is computed
+    num_correct_predictions = np.sum(predictions == targets)
+
+    # Calculate accuracy
+    # It's the ratio of correct predictions to total predictions
+    accuracy = num_correct_predictions / len(X)
     return accuracy
 
 
@@ -35,7 +49,19 @@ class LogisticTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 2b)
-        loss = 0
+        # Forward pass: compute the model's predictions for the batch
+        predictions = self.model.forward(X_batch)
+
+        # Compute the loss between the predictions and the actual labels
+        loss = cross_entropy_loss(Y_batch, predictions)
+
+        # Backward pass: compute the gradient of the loss with respect to the model's weights
+        self.model.backward(X_batch, predictions, Y_batch)
+
+        # Update the weights using the computed gradients
+        self.model.w -= self.model.grad * self.learning_rate
+
+        # Return the computed loss
         return loss
 
     def validation_step(self):

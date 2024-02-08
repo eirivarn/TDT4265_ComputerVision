@@ -16,9 +16,23 @@ def calculate_accuracy(X: np.ndarray, targets: np.ndarray, model: SoftmaxModel) 
     Returns:
         Accuracy (float)
     """
-    # TODO: Implement this function (task 3c)
-    accuracy = 0
+    # TODO Implement this function (Task 3b)
+    outputs = model.forward(X)
+    predicted_labels = np.argmax(outputs, axis=1)
+    target_labels = np.argmax(targets, axis=1)
+    accuracy = np.mean(predicted_labels == target_labels)
     return accuracy
+
+
+def visualize_weights(model, title):
+    fig, axes = plt.subplots(1, 10, figsize=(20, 2))
+    for i, ax in enumerate(axes):
+        weight = model.w[:-1, i].reshape(28, 28)
+        ax.imshow(weight, cmap='viridis')
+        ax.set_title(f'Digit {i}')
+        ax.axis('off')
+    plt.suptitle(title)
+    plt.show()
 
 
 class SoftmaxTrainer(BaseTrainer):
@@ -36,7 +50,18 @@ class SoftmaxTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 3b)
-        loss = 0
+        predictions = self.model.forward(X_batch)
+
+        # Compute the loss between the predictions and the actual labels
+        loss = cross_entropy_loss(Y_batch, predictions)
+
+        # Backward pass: compute the gradient of the loss with respect to the model's weights
+        self.model.backward(X_batch, predictions, Y_batch)
+
+        # Update the weights using the computed gradients
+        self.model.w -= self.model.grad * self.learning_rate
+
+        # Return the computed loss
         return loss
 
     def validation_step(self):
@@ -67,7 +92,6 @@ def main():
     num_epochs = 50
     learning_rate = 0.01
     batch_size = 128
-    l2_reg_lambda = 0
     shuffle_dataset = True
 
     # Load dataset
@@ -77,64 +101,43 @@ def main():
     Y_train = one_hot_encode(Y_train, 10)
     Y_val = one_hot_encode(Y_val, 10)
 
-    # ANY PARTS OF THE CODE BELOW THIS CAN BE CHANGED.
+    l2_lambdas = [1.0, 0.1, 0.01, 0.001]
+    l2_norms = []
+    validation_accuracies = {l2: [] for l2 in l2_lambdas}
+    training_steps = []
 
-    # Intialize model
-    model = SoftmaxModel(l2_reg_lambda)
-    # Train model
-    trainer = SoftmaxTrainer(
-        model, learning_rate, batch_size, shuffle_dataset,
-        X_train, Y_train, X_val, Y_val,
-    )
-    train_history, val_history = trainer.train(num_epochs)
+    for l2_reg_lambda in l2_lambdas:
+        print(f"Training with λ = {l2_reg_lambda}")
 
-    print("Final Train Cross Entropy Loss:",
-          cross_entropy_loss(Y_train, model.forward(X_train)))
-    print("Final Validation Cross Entropy Loss:",
-          cross_entropy_loss(Y_val, model.forward(X_val)))
-    print("Final Train accuracy:", calculate_accuracy(X_train, Y_train, model))
-    print("Final Validation accuracy:", calculate_accuracy(X_val, Y_val, model))
+        # Initialize model
+        model = SoftmaxModel(l2_reg_lambda)
+        # Train model
+        trainer = SoftmaxTrainer(
+            model, learning_rate, batch_size, shuffle_dataset,
+            X_train, Y_train, X_val, Y_val,
+        )
+        train_history, val_history = trainer.train(num_epochs)
+        validation_accuracies[l2_reg_lambda] = val_history['accuracy']
 
-    plt.ylim([0.2, .8])
-    utils.plot_loss(train_history["loss"],
-                    "Training Loss", npoints_to_average=10)
-    utils.plot_loss(val_history["loss"], "Validation Loss")
-    plt.legend()
-    plt.xlabel("Number of Training Steps")
-    plt.ylabel("Cross Entropy Loss - Average")
-    plt.savefig("task3b_softmax_train_loss.png")
+        if not training_steps:  # Assumes all training runs go for the same number of steps
+            training_steps = [i for i in range(
+                len(validation_accuracies[l2_reg_lambda]))]
+
+        visualize_weights(
+            model, f"Weights with L2 Regularization (λ = {l2_reg_lambda})")
+
+        # Compute the L2 norm of the weights
+        l2_norm = np.linalg.norm(model.w)
+        l2_norms.append(l2_norm)
+
+    plt.figure()
+    plt.plot(l2_lambdas, l2_norms, marker='o')
+    plt.xscale('log')
+    plt.xlabel('λ value')
+    plt.ylabel('L2 norm of weights')
+    plt.title('L2 Norm of Weights for different λ values')
+    plt.savefig("task4c_l2_norm_vs_lambda.png")
     plt.show()
-
-    # Plot accuracy
-    plt.ylim([0.89, .93])
-    utils.plot_loss(train_history["accuracy"], "Training Accuracy")
-    utils.plot_loss(val_history["accuracy"], "Validation Accuracy")
-    plt.xlabel("Number of Training Steps")
-    plt.ylabel("Accuracy")
-    plt.legend()
-    plt.savefig("task3b_softmax_train_accuracy.png")
-    plt.show()
-
-    # Train a model with L2 regularization (task 4b)
-
-    model1 = SoftmaxModel(l2_reg_lambda=1.0)
-    trainer = SoftmaxTrainer(
-        model1, learning_rate, batch_size, shuffle_dataset,
-        X_train, Y_train, X_val, Y_val,
-    )
-    train_history_reg01, val_history_reg01 = trainer.train(num_epochs)
-    # You can finish the rest of task 4 below this point.
-
-    # Plotting of softmax weights (Task 4b)
-    # plt.imsave("task4b_softmax_weight.png", weight, cmap="gray")
-
-    # Plotting of accuracy for difference values of lambdas (task 4c)
-    l2_lambdas = [1, .1, .01, .001]
-    plt.savefig("task4c_l2_reg_accuracy.png")
-
-    # Task 4d - Plotting of the l2 norm for each weight
-
-    plt.savefig("task4d_l2_reg_norms.png")
 
 
 if __name__ == "__main__":
