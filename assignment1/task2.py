@@ -16,21 +16,14 @@ def calculate_accuracy(X: np.ndarray, targets: np.ndarray, model: BinaryModel) -
         Accuracy (float)
     """
     # TODO Implement this function (Task 2c)
-    # Use the model to predict outputs
-    outputs = model.forward(X)
+    outputs = model.forward(X=X)
 
-    # Threshold the outputs to get binary class predictions
-    # Convert probabilities to 0 or 1 based on the threshold of 0.5
-    predictions = outputs > 0.5
+    # Array with True / 1 for every value > 0.5.
+    binary_list = outputs > 0.5
 
-    # Calculate the number of correct predictions
-    # This is done by comparing predictions with targets
-    # The sum of True values (correct predictions) is computed
-    num_correct_predictions = np.sum(predictions == targets)
+    correct_guesses = np.sum(binary_list == targets)
+    accuracy = correct_guesses / len(targets)
 
-    # Calculate accuracy
-    # It's the ratio of correct predictions to total predictions
-    accuracy = num_correct_predictions / len(X)
     return accuracy
 
 
@@ -49,19 +42,19 @@ class LogisticTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 2b)
-        # Forward pass: compute the model's predictions for the batch
-        predictions = self.model.forward(X_batch)
 
-        # Compute the loss between the predictions and the actual labels
-        loss = cross_entropy_loss(Y_batch, predictions)
+        # Get predictions / outputs
+        outputs = self.model.forward(X_batch)
 
-        # Backward pass: compute the gradient of the loss with respect to the model's weights
-        self.model.backward(X_batch, predictions, Y_batch)
+        # Get the loss of this iteration (improvement)
+        loss = cross_entropy_loss(targets=Y_batch, outputs=outputs)
 
-        # Update the weights using the computed gradients
-        self.model.w -= self.model.grad * self.learning_rate
+        # Update the gradient to get weights that will increase the loss
+        self.model.backward(X=X_batch, outputs=outputs, targets=Y_batch)
 
-        # Return the computed loss
+        # Update the weights to be the opposite of the gradient, times a scalar learning rate
+        self.model.w += -self.model.grad * self.learning_rate
+
         return loss
 
     def validation_step(self):
@@ -89,7 +82,7 @@ class LogisticTrainer(BaseTrainer):
 
 def main():
     # hyperparameters DO NOT CHANGE IF NOT SPECIFIED IN ASSIGNMENT TEXT
-    num_epochs = 50
+    num_epochs = 500
     learning_rate = 0.05
     batch_size = 128
     shuffle_dataset = False

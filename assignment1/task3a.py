@@ -13,25 +13,20 @@ def cross_entropy_loss(targets: np.ndarray, outputs: np.ndarray):
         Cross entropy error (float)
     """
     # TODO implement this function (Task 3a)
-    # Unngå log(0) ved å legge til en liten verdi til outputs
-    epsilon = 1e-12
-    outputs = np.clip(outputs, epsilon, 1. - epsilon)
-
-    # Beregn kryssentropitapet for hvert eksempel
-    cross_entropy = -np.sum(targets * np.log(outputs), axis=1)
-
-    # Ta gjennomsnittet over alle eksemplene for å få det gjennomsnittlige tapet
-    average_loss = np.mean(cross_entropy)
     assert targets.shape == outputs.shape, \
         f"Targets shape: {targets.shape}, outputs: {outputs.shape}"
-    return average_loss
+
+    cross_entropy_loss = - \
+        (np.sum(targets * np.log(outputs)))/len(targets)
+
+    return cross_entropy_loss
 
 
 class SoftmaxModel:
 
     def __init__(self, l2_reg_lambda: float):
         # Define number of input nodes
-        self.I = 785  # number of input nodes
+        self.I = 785
 
         # Define number of output nodes
         self.num_outputs = 10
@@ -48,11 +43,9 @@ class SoftmaxModel:
             y: output of model with shape [batch size, num_outputs]
         """
         # TODO implement this function (Task 3a)
-        linear_combination = np.dot(X, self.w)
-        # Softmax activation function
-        y = np.exp(linear_combination) / \
-            np.sum(np.exp(linear_combination), axis=1, keepdims=True)
-        return y
+        z = np.dot(X, self.w)
+        outputs = np.exp(z) / np.sum(np.exp(z), axis=1, keepdims=True)
+        return outputs
 
     def backward(self, X: np.ndarray, outputs: np.ndarray, targets: np.ndarray) -> None:
         """
@@ -68,14 +61,18 @@ class SoftmaxModel:
         self.grad = -np.dot(X.T, error) / X.shape[0]
         # To implement L2 regularization task (4b) you can get the lambda value in self.l2_reg_lambda
         # which is defined in the constructor.
-        self.grad += 2 * self.l2_reg_lambda * self.w
         assert targets.shape == outputs.shape, \
             f"Output shape: {outputs.shape}, targets: {targets.shape}"
+        self.grad = np.zeros_like(self.w)
         assert self.grad.shape == self.w.shape, \
             f"Grad shape: {self.grad.shape}, w: {self.w.shape}"
+        gradient = np.dot(X.T, outputs - targets)
+        self.grad = gradient / len(X)
+        # Task 4b
+        self.grad += 2 * self.l2_reg_lambda * self.w
 
     def zero_grad(self) -> None:
-        self.grad = np.zeros_like(self.grad)
+        self.grad = np.zeros_like(self.w)
 
 
 def one_hot_encode(Y: np.ndarray, num_classes: int):
@@ -89,13 +86,10 @@ def one_hot_encode(Y: np.ndarray, num_classes: int):
     # TODO implement this function (Task 3a)
     num_examples = Y.shape[0]
     one_hot_encoded = np.zeros((num_examples, num_classes))
-    """
+
     for i in range(num_examples):
         label = Y[i]
         one_hot_encoded[i, label] = 1
-    """
-    # A more efficent way using np.arange
-    one_hot_encoded[np.arange(Y.size), Y.flatten()] = 1
     return one_hot_encoded
 
 
