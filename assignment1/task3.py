@@ -107,7 +107,7 @@ def main():
     Y_val = one_hot_encode(Y_val, 10)
 
     # ANY PARTS OF THE CODE BELOW THIS CAN BE CHANGED.
-
+    l2_reg_lambda = 0.0
     # Intialize model
     model = SoftmaxModel(l2_reg_lambda)
     # Train model
@@ -156,7 +156,6 @@ def main():
 
     # Plotting of softmax weights (Task 4b)
     # plt.imsave("task4b_softmax_weight.png", weight, cmap="gray")
-
     # Plotting of accuracy for difference values of lambdas (task 4c)
     l2_lambdas = [1, .1, .01, .001]
     l2_norms = []
@@ -176,8 +175,12 @@ def main():
         l2_norm = np.linalg.norm(model.w)
         l2_norms.append(l2_norm)
         validation_accuracies[l2_reg_lambda] = val_history['accuracy']
+
+        # Comment out this part to visualize the weights
+        """
         visualize_weights(
             model, f"Weights with L2 Regularization (λ = {l2_reg_lambda})")
+        """
 
         utils.plot_loss(
             val_history["accuracy"], f"Validation Accuracy for lambda value: {l2_reg_lambda}")
