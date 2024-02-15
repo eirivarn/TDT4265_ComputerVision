@@ -13,7 +13,18 @@ def pre_process_images(X: np.ndarray):
         X: images of shape [batch size, 785] normalized as described in task2a
     """
     assert X.shape[1] == 784, f"X.shape[1]: {X.shape[1]}, should be 784"
-    # TODO implement this function (Task 2a)
+
+    # Normalize the images
+    X_avg = np.mean(X)
+    X_std = np.std(X)
+    X = (X - X_avg) / (X_std + 1e-6)
+
+    print("Mean: ", X_avg, " \nStd: ", X_std)
+
+    # Apply bias trick
+    bias_term = np.ones((X.shape[0], 1))
+    X = np.concatenate((X, bias_term), axis=1)
+
     return X
 
 
@@ -29,7 +40,8 @@ def cross_entropy_loss(targets: np.ndarray, outputs: np.ndarray):
         targets.shape == outputs.shape
     ), f"Targets shape: {targets.shape}, outputs: {outputs.shape}"
     # TODO: Implement this function (copy from last assignment)
-    raise NotImplementedError
+    cross_entropy_loss = - (np.sum(targets * np.log(outputs)))/len(targets)
+    return cross_entropy_loss
 
 
 class SoftmaxModel:
@@ -46,7 +58,7 @@ class SoftmaxModel:
             1
         )  # Always reset random seed before weight init to get comparable results.
         # Define number of input nodes
-        self.I = None
+        self.I = 785
         self.use_improved_sigmoid = use_improved_sigmoid
         self.use_relu = use_relu
         self.use_improved_weight_init = use_improved_weight_init
@@ -77,7 +89,19 @@ class SoftmaxModel:
         # TODO implement this function (Task 2b)
         # HINT: For performing the backward pass, you can save intermediate activations in variables in the forward pass.
         # such as self.hidden_layer_output = ...
-        return None
+        
+        # Hidden layer
+        hidden_weights = self.ws[0]
+        z_hidden = np.dot(X, hidden_weights)
+        self.hidden_activation = 1 / (1 + np.exp(-z_hidden)) #This is essentially the hidden neurons
+            
+        #output layer
+        output_weights = self.ws[1]
+        z_output = np.dot(self.hidden_activation, output_weights)
+        predictions = np.exp(z_output) / np.sum(np.exp(z_output), axis=1, keepdims=True)
+        
+        return predictions
+        
 
     def backward(self, X: np.ndarray, outputs: np.ndarray, targets: np.ndarray) -> None:
         """
@@ -100,8 +124,18 @@ class SoftmaxModel:
                 grad.shape == w.shape
             ), f"Expected the same shape. Grad shape: {grad.shape}, w: {w.shape}."
 
+        # Calculate the error
+        output_error = -(targets - outputs)
+        grad_output = np.dot(self.hidden_activation.T, output_error) / len(X)
+
+        hidden_error = np.dot(output_error, self.ws[1].T) * (self.hidden_activation * (1 - self.hidden_activation))
+        grad_hidden = np.dot(X.T, hidden_error) / X.shape[0]
+
+        self.grads = [grad_hidden, grad_output]
+
+
     def zero_grad(self) -> None:
-        self.grads = [None for i in range(len(self.ws))]
+        self.grads = [np.zeros_like(w) for w in self.ws]
 
 
 def one_hot_encode(Y: np.ndarray, num_classes: int):
@@ -113,12 +147,18 @@ def one_hot_encode(Y: np.ndarray, num_classes: int):
         Y: shape [Num examples, num classes]
     """
     # TODO: Implement this function (copy from last assignment)
-    raise NotImplementedError
+    num_examples = Y.shape[0]
+    one_hot_encoded = np.zeros((num_examples, num_classes))
+
+    for i in range(num_examples):
+        label = Y[i]
+        one_hot_encoded[i, label] = 1
+    return one_hot_encoded
 
 
 def gradient_approximation_test(model: SoftmaxModel, X: np.ndarray, Y: np.ndarray):
     """
-    Numerical approximation for gradients. Should not be edited.
+    Numerical approximation for gradients. Should not be edidted.
     Details about this test is given in the appendix in the assignment.
     """
 
