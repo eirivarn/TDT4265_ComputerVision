@@ -19,7 +19,15 @@ def calculate_accuracy(
         Accuracy (float)
     """
     # TODO: Implement this function (copy from last assignment)
-    accuracy = 0
+    outputs = model.forward(X)
+
+    # Convert probabilities to class predictions
+    predictions = np.argmax(outputs, axis=1)
+    true_labels = np.argmax(targets, axis=1)
+
+    correct_guesses = np.sum(predictions == true_labels)
+    accuracy = correct_guesses / len(targets)
+
     return accuracy
 
 
@@ -52,13 +60,17 @@ class SoftmaxTrainer(BaseTrainer):
             loss value (float) on batch
         """
         # TODO: Implement this function (task 2c)
-
-        loss = 0
-
-            self.model.ws[layer_idx] = (
-                self.model.ws[layer_idx] - self.learning_rate * grad
-        loss=cross_entropy_loss(Y_batch, logits)  # sol
-
+         # Get predictions / outputs
+        outputs = self.model.forward(X_batch)
+        # Get the loss of this iteration (improvement)
+        loss = cross_entropy_loss(Y_batch, outputs)
+        # Update the gradient to get weights that will increase the loss
+        self.model.backward(X_batch, outputs, Y_batch)
+        
+        # Update the weights to be the opposite of the gradient, times a scalar learningrate
+        self.model.ws[0] -= self.learning_rate * self.model.grads[0]
+        self.model.ws[1] -= self.learning_rate * self.model.grads[1]
+        
         return loss
 
     def validation_step(self):

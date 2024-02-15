@@ -15,16 +15,14 @@ def pre_process_images(X: np.ndarray):
     assert X.shape[1] == 784, f"X.shape[1]: {X.shape[1]}, should be 784"
 
     # Normalize the images
-    X_avg = np.mean(X)
-    X_std = np.std(X)
+    X_avg = np.mean(X, axis=0)
+    X_std = np.std(X, axis=0)
     X = (X - X_avg) / (X_std + 1e-6)
-
-    print("Mean: ", X_avg, " \nStd: ", X_std)
 
     # Apply bias trick
     bias_term = np.ones((X.shape[0], 1))
     X = np.concatenate((X, bias_term), axis=1)
-
+    
     return X
 
 
@@ -40,7 +38,7 @@ def cross_entropy_loss(targets: np.ndarray, outputs: np.ndarray):
         targets.shape == outputs.shape
     ), f"Targets shape: {targets.shape}, outputs: {outputs.shape}"
     # TODO: Implement this function (copy from last assignment)
-    cross_entropy_loss = - (np.sum(targets * np.log(outputs)))/len(targets)
+    cross_entropy_loss = - np.sum(targets * np.log(outputs))/len(targets)
     return cross_entropy_loss
 
 
@@ -74,7 +72,7 @@ class SoftmaxModel:
         for size in self.neurons_per_layer:
             w_shape = (prev, size)
             print("Initializing weight to shape:", w_shape)
-            w = np.zeros(w_shape)
+            w = np.random.uniform(-1, 1, w_shape)
             self.ws.append(w)
             prev = size
         self.grads = [None for i in range(len(self.ws))]
@@ -128,8 +126,8 @@ class SoftmaxModel:
         output_error = -(targets - outputs)
         grad_output = np.dot(self.hidden_activation.T, output_error) / len(X)
 
-        hidden_error = np.dot(output_error, self.ws[1].T) * (self.hidden_activation * (1 - self.hidden_activation))
-        grad_hidden = np.dot(X.T, hidden_error) / X.shape[0]
+        hidden_error = np.dot(output_error, self.ws[1].T) * self.hidden_activation * (1 - self.hidden_activation)
+        grad_hidden = np.dot(X.T, hidden_error) / len(X)
 
         self.grads = [grad_hidden, grad_output]
 
