@@ -49,18 +49,16 @@ def main():
             Y_train,
             X_val,
             Y_val)
+        
+        print("Training new model")
+        print("Use Improved Weight Init:", use_improved_weight_init)
+        print("Use Improved Sigmoid:", use_improved_sigmoid)
+        print("Use Momentum:", use_momentum)
+        print()
 
         # Train the model
         train_history, val_history = trainer.train(num_epochs)
-        
-        print("Model Configurations:")
-        for config in configurations:
-            print("Label:", config[0])
-            print("Use Improved Weight Init:", config[1])
-            print("Use Improved Sigmoid:", config[2])
-            print("Use Momentum:", config[3])
-            print()
-        
+    
         print(
         "Final Train Cross Entropy Loss:",
         cross_entropy_loss(Y_train, model.forward(X_train)),
@@ -87,7 +85,7 @@ def main():
         plt.xlabel("Number of Epochs")
         plt.ylabel("Accuracy")
         plt.legend()
-        plt.ylim([0.7, 1.0])
+        plt.ylim([0.75, 1.0])
 
     # Save the plot
     plt.savefig("assignment2/images/task3_complete.png")
