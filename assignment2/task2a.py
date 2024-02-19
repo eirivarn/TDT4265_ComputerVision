@@ -66,16 +66,26 @@ class SoftmaxModel:
         # A hidden layer with 64 neurons and a output layer with 10 neurons.
         self.neurons_per_layer = neurons_per_layer
 
-        # Initialize the weights
-        self.ws = []
-        prev = self.I
-        for size in self.neurons_per_layer:
-            w_shape = (prev, size)
-            print("Initializing weight to shape:", w_shape)
-            w = np.random.uniform(-1, 1, w_shape)
-            self.ws.append(w)
-            prev = size
-        self.grads = [None for i in range(len(self.ws))]
+        self.ws = []  # List to store weight matrices for each layer
+        previous_layer_size = self.I  # Number of nodes in the previous layer (initially set to input layer size)
+
+        # Iterate through each layer defined in neurons_per_layer to initialize weights
+        for current_layer_size in self.neurons_per_layer:
+            # Define the shape of the weight matrix for the current layer
+            weight_matrix_shape = (previous_layer_size, current_layer_size)
+            print("Initializing weights with shape:", weight_matrix_shape)
+            
+            # Initialize weight matrix with random values
+            if self.use_improved_weight_init:
+                # Improved weight initialization method
+                weight_matrix = np.random.normal(0, 1/np.sqrt(previous_layer_size), weight_matrix_shape)
+            else:
+                # Standard weight initialization (uniform distribution)
+                weight_matrix = np.random.uniform(-1, 1, weight_matrix_shape)
+            self.ws.append(weight_matrix)
+            previous_layer_size = current_layer_size
+            
+        self.gradients = [None for _ in range(len(self.ws))]
 
     def forward(self, X: np.ndarray) -> np.ndarray:
         """
