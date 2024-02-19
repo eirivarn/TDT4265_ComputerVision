@@ -96,22 +96,27 @@ class SoftmaxModel:
         """
         # TODO implement this function (Task 2b)
         # HINT: For performing the backward pass, you can save intermediate activations in variables in the forward pass.
-        # such as self.hidden_layer_output = ...
+        # such as self.hidden_layer_output = ...        
         
+        hidden_weights = self.ws[:-1]
+        self.activations = [X]
+
         # Hidden layer
-        hidden_weights = self.ws[0]
-        z_hidden = np.dot(X, hidden_weights)
-        if self.use_improved_sigmoid:
-            # Use improved sigmoid for hidden layer activation
-            self.hidden_activation = 1.7159 * np.tanh(2/3 * z_hidden) # This is essentially the hidden neurons
-        else:
-            # Use standard sigmoid for hidden layer activation
-            self.hidden_activation = 1 / (1 + np.exp(-z_hidden)) # This is essentially the hidden neurons
+        for layer_weights in hidden_weights:
+            z_hidden = np.dot(self.activations, layer_weights)
+            if self.use_improved_sigmoid:
+                # Use improved sigmoid for hidden layer activation
+                hidden_activation = 1.7159 * np.tanh(2/3 * z_hidden) # This is essentially the hidden neurons
+            else:
+                # Use standard sigmoid for hidden layer activation
+                hidden_activation = 1 / (1 + np.exp(-z_hidden)) # This is essentially the hidden neurons
+            self.activations.append(hidden_activation)
             
         #output layer
         output_weights = self.ws[1]
         z_output = np.dot(self.hidden_activation, output_weights)
         predictions = np.exp(z_output) / np.sum(np.exp(z_output), axis=1, keepdims=True)
+        self.activations.append(predictions)
         
         return predictions
         
@@ -139,23 +144,21 @@ class SoftmaxModel:
 
         # Calculate the error
         # Output layer
-        output_error = -(targets - outputs)
-        grad_output = np.dot(self.hidden_activation.T, output_error) / len(X)
-
-        # Hidden layer
-        if self.use_improved_sigmoid:
-            # Derivative of improved sigmoid
-            derivative = 1.14393 * (1 - np.tanh(2/3 * np.dot(X, self.ws[0]))**2)
-        else:
-            # Derivative of standard sigmoid
-            derivative = self.hidden_activation * (1 - self.hidden_activation)
-            
-        error_propagated = np.dot(output_error, self.ws[1].T)
-        hidden_error = error_propagated * derivative
-        grad_hidden = np.dot(X.T, hidden_error) / len(X)
+        previous_layer_error -= -(targets - outputs)
         
-        self.grads = [grad_hidden, grad_output]
+        for layer_number in reversed(range(1, len(self.ws) - 1)): # Iterates backwards starting from the layer behind the output layer
+            current_activation = self.activations[layer_number]
+            gradient_current_layer = np.dot(self.current_activation.T, previous_layer_error) / len(X)
+            self.grads[layer_number] = gradient_current_layer
 
+            if layer_number > 0:
+                if self.use_improved_sigmoid:
+                    # Derivative of improved sigmoid
+                    derivative = 1.14393 * (1 - np.tanh(2/3 * np.dot(X, self.ws[0]))**2)
+                else:
+                    # Derivative of standard sigmoid
+                    derivative = current_activation * (1 - current_activation)
+                previous_layer_error = np.dot(previous_layer_error, self.ws[layer_number].T)*derivative
 
     def zero_grad(self) -> None:
         self.grads = [np.zeros_like(w) for w in self.ws]
