@@ -101,7 +101,12 @@ class SoftmaxModel:
         # Hidden layer
         hidden_weights = self.ws[0]
         z_hidden = np.dot(X, hidden_weights)
-        self.hidden_activation = 1 / (1 + np.exp(-z_hidden)) #This is essentially the hidden neurons
+        if self.use_improved_sigmoid:
+            # Use improved sigmoid for hidden layer activation
+            self.hidden_activation = 1.7159 * np.tanh(2/3 * z_hidden) # This is essentially the hidden neurons
+        else:
+            # Use standard sigmoid for hidden layer activation
+            self.hidden_activation = 1 / (1 + np.exp(-z_hidden)) # This is essentially the hidden neurons
             
         #output layer
         output_weights = self.ws[1]
@@ -133,12 +138,22 @@ class SoftmaxModel:
             ), f"Expected the same shape. Grad shape: {grad.shape}, w: {w.shape}."
 
         # Calculate the error
+        # Output layer
         output_error = -(targets - outputs)
         grad_output = np.dot(self.hidden_activation.T, output_error) / len(X)
 
-        hidden_error = np.dot(output_error, self.ws[1].T) * self.hidden_activation * (1 - self.hidden_activation)
+        # Hidden layer
+        if self.use_improved_sigmoid:
+            # Derivative of improved sigmoid
+            derivative = 1.14393 * (1 - np.tanh(2/3 * np.dot(X, self.ws[0]))**2)
+        else:
+            # Derivative of standard sigmoid
+            derivative = self.hidden_activation * (1 - self.hidden_activation)
+            
+        error_propagated = np.dot(output_error, self.ws[1].T)
+        hidden_error = error_propagated * derivative
         grad_hidden = np.dot(X.T, hidden_error) / len(X)
-
+        
         self.grads = [grad_hidden, grad_output]
 
 
