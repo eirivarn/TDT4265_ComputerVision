@@ -17,7 +17,7 @@ def pre_process_images(X: np.ndarray):
     # Normalize the images
     X_avg = np.mean(X, axis=0)
     X_std = np.std(X, axis=0)
-    X = (X - X_avg) / (X_std + 1e-6)
+    X = (X - X_avg) / (X_std + 1e-8)
 
     # Apply bias trick
     bias_term = np.ones((X.shape[0], 1))
@@ -98,12 +98,13 @@ class SoftmaxModel:
         # HINT: For performing the backward pass, you can save intermediate activations in variables in the forward pass.
         # such as self.hidden_layer_output = ...        
         
+        # All the weights except the output layer
         hidden_weights = self.ws[:-1]
         self.activations = [X]
 
         # Hidden layer
         for layer_weights in hidden_weights:
-            z_hidden = np.dot(self.activations, layer_weights)
+            z_hidden = np.dot(self.activations[-1], layer_weights)
             if self.use_improved_sigmoid:
                 # Use improved sigmoid for hidden layer activation
                 hidden_activation = 1.7159 * np.tanh(2/3 * z_hidden) # This is essentially the hidden neurons
@@ -113,8 +114,8 @@ class SoftmaxModel:
             self.activations.append(hidden_activation)
             
         #output layer
-        output_weights = self.ws[1]
-        z_output = np.dot(self.hidden_activation, output_weights)
+        output_weights = self.ws[-1]
+        z_output = np.dot(self.activations[-1], output_weights)
         predictions = np.exp(z_output) / np.sum(np.exp(z_output), axis=1, keepdims=True)
         self.activations.append(predictions)
         
@@ -136,7 +137,7 @@ class SoftmaxModel:
         ), f"Output shape: {outputs.shape}, targets: {targets.shape}"
         # A list of gradients.
         # For example, self.grads[0] will be the gradient for the first hidden layer
-        self.grads = []
+        self.grads = [np.zeros_like(w) for w in self.ws]
         for grad, w in zip(self.grads, self.ws):
             assert (
                 grad.shape == w.shape
@@ -144,22 +145,24 @@ class SoftmaxModel:
 
         # Calculate the error
         # Output layer
-        previous_layer_error -= -(targets - outputs)
+        propagated_error = outputs - targets
         
-        for layer_number in reversed(range(1, len(self.ws) - 1)): # Iterates backwards starting from the layer behind the output layer
-            current_activation = self.activations[layer_number]
-            gradient_current_layer = np.dot(self.current_activation.T, previous_layer_error) / len(X)
+        for layer_number in reversed(range(len(self.ws))): # Iterates backwards starting from the layer behind the output layer
+            current_layer_activations = self.activations[layer_number]
+            gradient_current_layer = np.dot(current_layer_activations.T, propagated_error) / X.shape[0]
             self.grads[layer_number] = gradient_current_layer
 
+            # If not the output layer
             if layer_number > 0:
+                propagated_error = np.dot(propagated_error, self.ws[layer_number].T)
                 if self.use_improved_sigmoid:
                     # Derivative of improved sigmoid
-                    derivative = 1.14393 * (1 - np.tanh(2/3 * np.dot(X, self.ws[0]))**2)
+                    activation_derivative = 1.7159 * (1 - np.tanh(2/3 * current_layer_activations)**2)
                 else:
                     # Derivative of standard sigmoid
-                    derivative = current_activation * (1 - current_activation)
-                previous_layer_error = np.dot(previous_layer_error, self.ws[layer_number].T)*derivative
-
+                    activation_derivative = current_layer_activations * (1 - current_layer_activations)
+                propagated_error = propagated_error * activation_derivative
+                
     def zero_grad(self) -> None:
         self.grads = [np.zeros_like(w) for w in self.ws]
 
