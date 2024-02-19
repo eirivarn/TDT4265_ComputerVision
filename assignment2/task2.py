@@ -45,7 +45,7 @@ class SoftmaxTrainer(BaseTrainer):
         self.momentum_gamma = momentum_gamma
         self.use_momentum = use_momentum
         # Init a history of previous gradients to use for implementing momentum
-        self.previous_grads = [np.zeros_like(w) for w in self.model.ws]
+        self.velocity = [np.zeros_like(w) for w in self.model.ws]
 
     def train_step(self, X_batch: np.ndarray, Y_batch: np.ndarray):
         """
@@ -62,15 +62,23 @@ class SoftmaxTrainer(BaseTrainer):
         # TODO: Implement this function (task 2c)
          # Get predictions / outputs
         outputs = self.model.forward(X_batch)
+        
         # Get the loss of this iteration (improvement)
         loss = cross_entropy_loss(Y_batch, outputs)
+        
         # Update the gradient to get weights that will increase the loss
         self.model.backward(X_batch, outputs, Y_batch)
         
-        # Update the weights to be the opposite of the gradient, times a scalar learningrate
-        self.model.ws[0] -= self.learning_rate * self.model.grads[0]
-        self.model.ws[1] -= self.learning_rate * self.model.grads[1]
-        
+        if self.use_momentum:
+            # Apply momentum and update weights for each layer
+            for i, grad in enumerate(self.model.grads):
+                self.velocity[i] = self.momentum_gamma * self.velocity[i] + self.learning_rate * grad
+                self.model.ws[i] -= self.velocity[i]
+        else:
+            # Update weights without momentum for each layer
+            for i, grad in enumerate(self.model.grads):
+                self.model.ws[i] -= self.learning_rate * grad
+    
         return loss
 
     def validation_step(self):
