@@ -50,6 +50,7 @@ def main():
             X_val,
             Y_val)
         
+    
         print("Training new model")
         print("Use Improved Weight Init:", use_improved_weight_init)
         print("Use Improved Sigmoid:", use_improved_sigmoid)
@@ -94,20 +95,23 @@ def main():
 
 """""
     model_configurations = [
-        ('1 Layer - 64 Nodes', [64, 10]),
-        ('2 Layers - 64 Nodes each', [64, 64, 10]),
-        ('1 Layer - 100 Nodes', [100, 10]),
-        ('2 Layers - 100 and 30 Nodes', [100, 30, 10]),
+        ('1 Layer - 32 Nodes', [32, 10]),
+        ('1 Layer - 128 Nodes', [128, 10]),
+        ('2 Layers - 59 Nodes each', [59, 59, 10]),
+        #('10 Layers - 64 Nodes each', [64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 10]),
+        #('1 Layer - 100 Nodes', [100, 10]),
+        #('2 Layers - 100 and 30 Nodes', [100, 30, 10]),
         # Add more configurations as needed
     ]
 
     # Initialize models and trainers for each configuration
     for label, neurons_per_layer in model_configurations:
+        use_momentum = False
         # Initialize the model and trainer
         model = SoftmaxModel(
             neurons_per_layer,
-            use_improved_sigmoid=False,  
-            use_improved_weight_init=False,  
+            use_improved_sigmoid=True,  
+            use_improved_weight_init=True,  
             use_relu=False)  
         trainer = SoftmaxTrainer(
             momentum_gamma,
