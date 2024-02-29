@@ -91,7 +91,8 @@ def main():
     plt.savefig("assignment2/images/task3_complete.png")
     # Show the plot
     plt.show()
-    
+
+"""""
     model_configurations = [
         ('1 Layer - 64 Nodes', [64, 10]),
         ('2 Layers - 64 Nodes each', [64, 64, 10]),
@@ -153,6 +154,7 @@ def main():
     plt.savefig("assignment2/images/task4_model_topology_comparisons.png")
     # Show the plot
     plt.show()
+"""
     
 if __name__ == "__main__":
     main()
