@@ -60,10 +60,6 @@ class BaseTrainer:
             val_history: a dictionary containing loss and accuracy over a selected set of steps
         """
         # Utility variables
-        best_val_loss = np.inf
-        epochs_without_improvement = 0
-        early_stop_threshold = 10
-
         num_batches_per_epoch = self.X_train.shape[0] // self.batch_size
         num_steps_per_val = num_batches_per_epoch // 5
         # A tracking value of loss over all training steps
