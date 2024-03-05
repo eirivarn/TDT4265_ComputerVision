@@ -5,11 +5,9 @@ import collections
 import utils
 import pathlib
 
-
-def compute_loss_and_accuracy(
-        dataloader: torch.utils.data.DataLoader,
-        model: torch.nn.Module,
-        loss_criterion: torch.nn.modules.loss._Loss):
+def compute_loss_and_accuracy(dataloader: torch.utils.data.DataLoader,
+                              model: torch.nn.Module,
+                              loss_criterion: torch.nn.modules.loss._Loss):
     """
     Computes the average loss and the accuracy over the whole dataset
     in dataloader.
@@ -20,28 +18,31 @@ def compute_loss_and_accuracy(
     Returns:
         [average_loss, accuracy]: both scalar.
     """
-    average_loss = 0
-    accuracy = 0
-    # TODO: Implement this function (Task  2a)
-    
+    total_loss = 0  # Initialize total_loss
+    total_correct = 0  # Total number of correct predictions
+    total_images = 0  # Total number of images processed
+
     with torch.no_grad():
         for (X_batch, Y_batch) in dataloader:
+            
             # Transfer images/labels to GPU VRAM, if possible
             X_batch = utils.to_cuda(X_batch)
             Y_batch = utils.to_cuda(Y_batch)
+            
             # Forward pass the images through our model
             output_probs = model(X_batch)
 
-            # Compute Loss and Accuracy
+            # Compute Loss
             loss = loss_criterion(output_probs, Y_batch)
-            total_loss += loss.item()
+            total_loss += loss.item() * X_batch.size(0)  # Now correctly scales with batch size
 
-            # Predicted class is the max index over the column dimension
+            # Compute Accuracy
             outputs = torch.argmax(output_probs, dim=1)
-            accuracy += (outputs == Y_batch).sum().item()/len(Y_batch)
+            total_correct += (outputs == Y_batch).sum().item()
+            total_images += Y_batch.size(0)  
     
-    average_loss = total_loss/len(dataloader)
-    accuracy = accuracy/len(dataloader)
+    average_loss = total_loss / total_images  
+    accuracy = total_correct / total_images  
     
     return average_loss, accuracy
 
