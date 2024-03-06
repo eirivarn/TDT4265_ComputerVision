@@ -5,11 +5,9 @@ import collections
 import utils
 import pathlib
 
-
-def compute_loss_and_accuracy(
-        dataloader: torch.utils.data.DataLoader,
-        model: torch.nn.Module,
-        loss_criterion: torch.nn.modules.loss._Loss):
+def compute_loss_and_accuracy(dataloader: torch.utils.data.DataLoader,
+                              model: torch.nn.Module,
+                              loss_criterion: torch.nn.modules.loss._Loss):
     """
     Computes the average loss and the accuracy over the whole dataset
     in dataloader.
@@ -20,20 +18,32 @@ def compute_loss_and_accuracy(
     Returns:
         [average_loss, accuracy]: both scalar.
     """
-    average_loss = 0
-    accuracy = 0
-    # TODO: Implement this function (Task  2a)
+    total_loss = 0  # Initialize total_loss
+    total_correct = 0  # Total number of correct predictions
+    total_images = 0  # Total number of images processed
+
     with torch.no_grad():
         for (X_batch, Y_batch) in dataloader:
+            
             # Transfer images/labels to GPU VRAM, if possible
             X_batch = utils.to_cuda(X_batch)
             Y_batch = utils.to_cuda(Y_batch)
+            
             # Forward pass the images through our model
             output_probs = model(X_batch)
 
-            # Compute Loss and Accuracy
+            # Compute Loss
+            loss = loss_criterion(output_probs, Y_batch)
+            total_loss += loss.item() * X_batch.size(0)  # Now correctly scales with batch size
 
-            # Predicted class is the max index over the column dimension
+            # Compute Accuracy
+            outputs = torch.argmax(output_probs, dim=1)
+            total_correct += (outputs == Y_batch).sum().item()
+            total_images += Y_batch.size(0)  
+    
+    average_loss = total_loss / total_images  
+    accuracy = total_correct / total_images  
+    
     return average_loss, accuracy
 
 
@@ -45,7 +55,8 @@ class Trainer:
                  early_stop_count: int,
                  epochs: int,
                  model: torch.nn.Module,
-                 dataloaders: typing.List[torch.utils.data.DataLoader]):
+                 dataloaders: typing.List[torch.utils.data.DataLoader],
+                 optimizer: torch.optim.Optimizer = None):
         """
             Initialize our trainer class.
         """
@@ -63,8 +74,10 @@ class Trainer:
         print(self.model)
 
         # Define our optimizer. SGD = Stochastich Gradient Descent
-        self.optimizer = torch.optim.SGD(self.model.parameters(),
-                                         self.learning_rate)
+        if optimizer is None:
+            self.optimizer = torch.optim.SGD(self.model.parameters(), self.learning_rate)
+        else:
+            self.optimizer = optimizer
 
         # Load our dataset
         self.dataloader_train, self.dataloader_val, self.dataloader_test = dataloaders
@@ -197,3 +210,31 @@ class Trainer:
                 f"Could not load best checkpoint. Did not find under: {self.checkpoint_dir}")
             return
         self.model.load_state_dict(state_dict)
+
+    def report_final_accuracies(self):
+        """
+        Reports the final training, validation, and test accuracies
+        """
+        # Ensure the model is in evaluation mode
+        self.model.eval()
+
+        # Calculate and report training accuracy and loss
+        train_loss, train_accuracy = compute_loss_and_accuracy(
+            self.dataloader_train, self.model, self.loss_criterion
+        )
+        print(f"Final Training Loss: {train_loss:.3f}, Final Training Accuracy: {train_accuracy:.3f}")
+
+        # Calculate and report validation accuracy and loss
+        val_loss, val_accuracy = compute_loss_and_accuracy(
+            self.dataloader_val, self.model, self.loss_criterion
+        )
+        print(f"Final Validation Loss: {val_loss:.3f}, Final Validation Accuracy: {val_accuracy:.3f}")
+
+        # Calculate and report test accuracy and loss
+        test_loss, test_accuracy = compute_loss_and_accuracy(
+            self.dataloader_test, self.model, self.loss_criterion
+        )
+        print(f"Final Test Loss: {test_loss:.3f}, Final Test Accuracy: {test_accuracy:.3f}")
+
+        # Set the model back to training mode
+        self.model.train()
