@@ -207,3 +207,31 @@ class Trainer:
                 f"Could not load best checkpoint. Did not find under: {self.checkpoint_dir}")
             return
         self.model.load_state_dict(state_dict)
+
+    def report_final_accuracies(self):
+        """
+        Reports the final training, validation, and test accuracies
+        """
+        # Ensure the model is in evaluation mode
+        self.model.eval()
+
+        # Calculate and report training accuracy and loss
+        train_loss, train_accuracy = compute_loss_and_accuracy(
+            self.dataloader_train, self.model, self.loss_criterion
+        )
+        print(f"Final Training Loss: {train_loss:.3f}, Final Training Accuracy: {train_accuracy:.3f}")
+
+        # Calculate and report validation accuracy and loss
+        val_loss, val_accuracy = compute_loss_and_accuracy(
+            self.dataloader_val, self.model, self.loss_criterion
+        )
+        print(f"Final Validation Loss: {val_loss:.3f}, Final Validation Accuracy: {val_accuracy:.3f}")
+
+        # Calculate and report test accuracy and loss
+        test_loss, test_accuracy = compute_loss_and_accuracy(
+            self.dataloader_test, self.model, self.loss_criterion
+        )
+        print(f"Final Test Loss: {test_loss:.3f}, Final Test Accuracy: {test_accuracy:.3f}")
+
+        # Set the model back to training mode
+        self.model.train()
