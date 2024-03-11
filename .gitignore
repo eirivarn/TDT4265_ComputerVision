@@ -214,3 +214,28 @@ pyrightconfig.json
 
 ##### EXTRA ADDED BY EIRIK 
 *.gz
+
+#Assignment 4
+# datasets
+assignment4/data/coco/
+assignment4/data/mnist_object_detection
+assignment4/data/original_mnist
+assignment4/outputs/
+assignment4/data/VOCdevkit
+assignment4/notebooks/data
+assignment4/data/tdt4265_2022
+
+assignment4/*.png
+assignment4/*.jpg
+assignment4/*.jpeg
+assignment4/*.m4a
+assignment4/*.mkv
+assignment4/*.mp4
+assignment4/
+assignment4/# Directories
+assignment4/.cache/
+assignment4/logs/
+assignment4/
+assignment4/.vscode
+assignment4/__pycache__
+assignment4/**/.ipynb_checkpoints/**
