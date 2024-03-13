@@ -16,4 +16,4 @@ from .ssd300 import (
 )
 # We can keep all other configs the same, and only change the learning rate to a given value.
 # You can now start training with the following command: python train.py configs/change_lr.py
-optimizer.lr = 1
+# optimizer.lr = 1
